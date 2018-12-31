@@ -13,7 +13,7 @@ class FolderAPI:
     def _get_request_header(self):
         return {'Authorization': self.secret_key}
 
-    def create(self, created_path):
+    def create_folder(self, created_path):
         print("폴더 생성 API")
 
         req_url = self._get_url()
@@ -118,7 +118,7 @@ if __name__ == '__main__':
     sort = "name:asc"                       # (선택) 목로 조회 정렬 기준 지정
 
     # 폴더 생성 API
-    result = folder_api.create(created_path)
+    result = folder_api.create_folder(created_path)
     print(result.json())
     print()
 
