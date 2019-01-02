@@ -13,122 +13,33 @@ class TaskAPI:
     def _get_request_header(self):
         return {'Authorization': self.secret_key}
 
-    def create(self, created_path):
-        print("폴더 생성 API")
+    def get_task(self, queue_id):
+        # 작업 조회 API
 
         req_url = self._get_url()
-        req_url += 'folders'
-        print(req_url)
-
-        req_header = self._get_request_header()
-        req_header['Content-Type'] = 'application/json; charset=utf-8'
-        print(req_header)
-
-        req_data = {'path': created_path}
-        print(req_data)
-
-        return requests.post(req_url, headers=req_header, json=req_data)
-
-    def get_file(self, created_path, created_by, file_name, page_num, row_num, sort):
-        req_url = self._get_url()
-        req_url += 'folders'
+        req_url += 'queues/'
+        req_url += queue_id
         print(req_url)
 
         req_header = self._get_request_header()
         print(req_header)
 
-        req_params={}
-        req_params['basepath'] = created_path
-        req_params['createdBy'] = created_by
-        req_params['name'] = file_name
-        req_params['page'] = page_num
-        req_params['rows'] = row_num
-        req_params['sort'] = sort
-
-        return requests.get(req_url, headers=req_header, params=req_params)
-
-    def get_file1(self, created_path, created_by, file_name, page_num, row_num, sort):
-        print("폴더 내 파일 목록 조회 API")
-
-        req_url = self._get_url()
-        req_url += 'folders?'
-        print("url : " + req_url)
-
-        req_header = self._get_request_header()
-        print(req_header)
-
-        req_params={}
-        req_params['basepath'] = created_path
-        req_params['createdBy'] = created_by
-        req_params['name'] = file_name
-        req_params['page'] = page_num
-        req_params['rows'] = row_num
-        req_params['sort'] = sort
-
-        req_query = urllib.parse.urlencode(req_params).replace('%2F', '/')
-        req_query = req_query.replace('%3A', ':')
-        print("query : " + req_query)
-
-        req_session = requests.Session()
-        req = requests.Request(method='GET', headers=req_header, url=req_url)
-
-        prep = req.prepare()
-        prep.url = req_url + req_query
-
-        result = req_session.send(prep)
-        return result
-
-    def get_folder(self, created_path):
-        print("폴더 속성 조회 API")
-
-        req_url = self._get_url()
-        req_url += 'properties?'
-        print("url : " + req_url)
-
-        req_header = self._get_request_header()
-        print(req_header)
-
-        req_params = {}
-        req_params['path'] = created_path
-
-        req_query = urllib.parse.urlencode(req_params).replace('%2F', '/')
-        print("query : " + req_query)
-
-        req_session = requests.Session()
-        req = requests.Request(method='GET', headers=req_header, url=req_url)
-
-        prep = req.prepare()
-        prep.url = req_url + req_query
-
-        result = req_session.send(prep)
-        return result
+        return requests.get(req_url, headers=req_header)
 
 if __name__ == '__main__':
 
-    task_api = TaskAPI(FOLDER_URL, APP_KEY, SECRET_KEY)
+    # git 올릴때 삭제 후 commit!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    IMAGE_URL = 'https://api-image.cloud.toast.com/image/v2.0/appkeys/'
+    APP_KEY = {APP_KEY}
+    SECRET_KEY = {SECRET_KEY}
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    base_path = '/'                         # base 경로
-    folder_name = 'jinho'                   # 폴더 이름
-    created_path = base_path + folder_name  # (필수) 폴더 경로
+    task_api = TaskAPI(IMAGE_URL, APP_KEY, SECRET_KEY)
 
-    created_by = 'U'                        # (선택) 목록 조회 대상 생성 속성 지정
-    file_name = 'sample.png'                # (선택) 목록 조회 대상 이름 지정
-    page_num = 1                            # (선택) 목록 조회 페이지 수 지정
-    row_num = 100                           # (선택) 목록 조회 열 수 지정
-    sort = "name:asc"                       # (선택) 목로 조회 정렬 기준 지정
+    queue_id = 'a66714dd-c80f-484b-b42c-5168e7baf4f5'   # (필수) 조회할 작업 고유 ID
 
-    # 폴더 생성 API
-    result = task_api.create(created_path)
+    # 작업 조회 API
+    result = task_api.get_task(queue_id)
     print(result.json())
     print()
 
-    # 폴더 내 파일 목록 조회 API
-    #result = folder_api.get_file(created_path, created_by, file_name, page_num, row_num, sort)
-    result = task_api.get_file1(created_path, created_by, file_name, page_num, row_num, sort)
-    print(result.json())
-    print()
-
-    # 폴더 속성 조회 API
-    result = task_api.get_folder(created_path)
-    print(result.json())
-    print()

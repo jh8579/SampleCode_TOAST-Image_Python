@@ -1,5 +1,6 @@
 import requests
 import urllib
+import json
 
 class UploadAPI:
     def __init__(self, folder_url, app_key, secret_key):
@@ -13,7 +14,7 @@ class UploadAPI:
     def _get_request_header(self):
         return {'Authorization': self.secret_key}
 
-    def upload_one_file(self, path, overwrite, autorename, operation_ids):
+    def upload_one_file(self, local_path, path, overwrite, autorename, operation_ids):
         print("단일 파일 업로드 API")
 
         req_url = self._get_url()
@@ -21,16 +22,27 @@ class UploadAPI:
         print("url : " + req_url)
 
         req_header = self._get_request_header()
+        req_header['Content-Type'] = 'application/octet-stream'
         print(req_header)
+
+        operation_str = ''                      # 리스트를 string ','로 구분
+        for id in operation_ids:
+            operation_str += id + ','           # 요소 마다 ',' 추가
+        operation_str = operation_str[:-1]      # 마지막 ',' 삭제
 
         req_params={}
         req_params['path'] = path
+        req_params['overwrite'] = overwrite
+        req_params['autorename'] = autorename
+        req_params['operationIds'] = operation_str
 
-        req_query = urllib.parse.urlencode(req_params).replace('%2F', '/')
+        file = open(local_path, 'rb').read()    # 해당 파일을 바이너리로 업로드
+
+        req_query = urllib.parse.urlencode(req_params).replace('%2F', '/')      # '/' 자동 인코딩으로 인한 변경
         print("query : " + req_query)
 
         req_session = requests.Session()
-        req = requests.Request(method='PUT', headers=req_header, url=req_url)
+        req = requests.Request(method='PUT', headers=req_header, url=req_url, data=file)
 
         prep = req.prepare()
         prep.url = req_url + req_query
@@ -38,57 +50,60 @@ class UploadAPI:
         result = req_session.send(prep)
         return result
 
-    def upload_multi_file(self, basepath, overwrite, autorename, operation_ids, callback_url):
+    def upload_multi_file(self, local_paths, basepath, overwrite, autorename, operation_ids, callback_url):
         print("다중 파일 업로드 API")
 
         req_url = self._get_url()
-        req_url += 'images?'
+        req_url += 'images'
         print("url : " + req_url)
 
         req_header = self._get_request_header()
         print(req_header)
 
-        req_params={}
-        req_params['path'] = path
+        files = []                                              # 파일 리스트를 배열에 담아 업로드
+        for file_path in local_paths:
+            files.append(('files', open(file_path, 'rb')))
 
-        req_query = urllib.parse.urlencode(req_params).replace('%2F', '/')
-        print("query : " + req_query)
+        params = {}
+        params['basepath'] = basepath
+        params['overwrite'] = overwrite
+        params['autorename'] = autorename
+        params['operationIds'] = operation_ids
+        params['callbackUrl'] = callback_url
 
-        req_session = requests.Session()
-        req = requests.Request(method='PUT', headers=req_header, url=req_url)
+        data = {}
+        data['params'] = (params, 'multipart/form-data')        # json 객체를 multipart 형태에 맞게 전송
+        print(data)
 
-        prep = req.prepare()
-        prep.url = req_url + req_query
-
-        result = req_session.send(prep)
-        return result
+        return requests.post(url=req_url, headers=req_header, files=files, data=data)
 
 if __name__ == '__main__':
 
-    upload_api = UploadAPI(FOLDER_URL, APP_KEY, SECRET_KEY)
+    # git 올릴때 삭제 후 commit!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    IMAGE_URL = 'https://api-image.cloud.toast.com/image/v2.0/appkeys/'
+    APP_KEY = {APP_KEY}
+    SECRET_KEY = {SECRET_KEY}
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    base_path = '/'                         # base 경로
-    folder_name = 'jinho'                   # 폴더 이름
-    created_path = base_path + folder_name  # (필수) 폴더 경로
+    upload_api = UploadAPI(IMAGE_URL, APP_KEY, SECRET_KEY)
 
-    created_by = 'U'                        # (선택) 목록 조회 대상 생성 속성 지정
-    file_name = 'sample.png'                # (선택) 목록 조회 대상 이름 지정
-    page_num = 1                            # (선택) 목록 조회 페이지 수 지정
-    row_num = 100                           # (선택) 목록 조회 열 수 지정
-    sort = "name:asc"                       # (선택) 목로 조회 정렬 기준 지정
+    path = '/sample.jpg'                    # (필수) 단일 업로드할 경로 + 파일명!!
+    local_path = './sample.jpg'             # (필수) 단일 업로드할 실제 파일 경로
 
-    # 폴더 생성 API
-    result = upload_api.create(created_path)
+    base_path = '/'                                 # (필수) 다중 업로드할 경로
+    local_paths = ['./sample.png', './sample.jpg']  # (필수) 다중 업로드할 실제 파일 경로 리스트
+
+    overwrite = 'false'                         # (선택) 같은 이름이 있을 경우 덮어쓰기 여부
+    autorename = 'true'                         # (선택) 같은 이름이 있을 경우 "이름(1).확장자" 형식으로 파일명 변경 여부
+    operation_ids = ['ddd']                     # (선택) 이미지 오퍼레이션 ID 리스트
+    callback_url = ''                           # (선택) 처리 결과를 통보받을 콜백 Url 경로
+
+    # 단일 파일 업로드 API
+    result = upload_api.upload_one_file(local_path, path, overwrite, autorename, operation_ids)
     print(result.json())
     print()
 
-    # 폴더 내 파일 목록 조회 API
-    #result = folder_api.get_file(created_path, created_by, file_name, page_num, row_num, sort)
-    result = upload_api.get_file1(created_path, created_by, file_name, page_num, row_num, sort)
-    print(result.json())
-    print()
-
-    # 폴더 속성 조회 API
-    result = folder_api.get_folder(created_path)
+    # 다중 파일 업로드 API
+    result = upload_api.upload_multi_file(local_paths, base_path, overwrite, autorename, operation_ids, callback_url)
     print(result.json())
     print()

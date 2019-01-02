@@ -1,5 +1,6 @@
-import requests
 import urllib
+import requests
+
 
 class FolderAPI:
     def __init__(self, folder_url, app_key, secret_key):
@@ -21,7 +22,7 @@ class FolderAPI:
         print(req_url)
 
         req_header = self._get_request_header()
-        req_header['Content-Type'] = 'application/json; charset=utf-8'
+        req_header['Content-Type'] = 'application/json'
         print(req_header)
 
         req_data = {'path': created_path}
@@ -30,24 +31,6 @@ class FolderAPI:
         return requests.post(req_url, headers=req_header, json=req_data)
 
     def get_file(self, created_path, created_by, file_name, page_num, row_num, sort):
-        req_url = self._get_url()
-        req_url += 'folders'
-        print(req_url)
-
-        req_header = self._get_request_header()
-        print(req_header)
-
-        req_params={}
-        req_params['basepath'] = created_path
-        req_params['createdBy'] = created_by
-        req_params['name'] = file_name
-        req_params['page'] = page_num
-        req_params['rows'] = row_num
-        req_params['sort'] = sort
-
-        return requests.get(req_url, headers=req_header, params=req_params)
-
-    def get_file1(self, created_path, created_by, file_name, page_num, row_num, sort):
         print("폴더 내 파일 목록 조회 API")
 
         req_url = self._get_url()
@@ -65,8 +48,8 @@ class FolderAPI:
         req_params['rows'] = row_num
         req_params['sort'] = sort
 
-        req_query = urllib.parse.urlencode(req_params).replace('%2F', '/')
-        req_query = req_query.replace('%3A', ':')
+        req_query = urllib.parse.urlencode(req_params).replace('%2F', '/')      # '/' 자동 인코딩으로 인한 변경
+        req_query = req_query.replace('%3A', ':')                               # ':' 자동 인코딩으로 인한 변경
         print("query : " + req_query)
 
         req_session = requests.Session()
@@ -91,7 +74,7 @@ class FolderAPI:
         req_params = {}
         req_params['path'] = created_path
 
-        req_query = urllib.parse.urlencode(req_params).replace('%2F', '/')
+        req_query = urllib.parse.urlencode(req_params).replace('%2F', '/')  # path 자동 인코딩으로 인한 변경
         print("query : " + req_query)
 
         req_session = requests.Session()
@@ -105,14 +88,20 @@ class FolderAPI:
 
 if __name__ == '__main__':
 
-    folder_api = FolderAPI(FOLDER_URL, APP_KEY, SECRET_KEY)
+    # git 올릴때 삭제 후 commit!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    IMAGE_URL = 'https://api-image.cloud.toast.com/image/v2.0/appkeys/'
+    APP_KEY = {APP_KEY}
+    SECRET_KEY = {SECRET_KEY}
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    folder_api = FolderAPI(IMAGE_URL, APP_KEY, SECRET_KEY)
 
     base_path = '/'                         # base 경로
-    folder_name = 'jinho'                   # 폴더 이름
+    folder_name = ''                        # 폴더 이름
     created_path = base_path + folder_name  # (필수) 폴더 경로
 
     created_by = 'U'                        # (선택) 목록 조회 대상 생성 속성 지정
-    file_name = 'sample.png'                # (선택) 목록 조회 대상 이름 지정
+    file_name = ''                          # (선택) 목록 조회 대상 이름 지정
     page_num = 1                            # (선택) 목록 조회 페이지 수 지정
     row_num = 100                           # (선택) 목록 조회 열 수 지정
     sort = "name:asc"                       # (선택) 목로 조회 정렬 기준 지정
@@ -123,8 +112,7 @@ if __name__ == '__main__':
     print()
 
     # 폴더 내 파일 목록 조회 API
-    #result = folder_api.get_file(created_path, created_by, file_name, page_num, row_num, sort)
-    result = folder_api.get_file1(created_path, created_by, file_name, page_num, row_num, sort)
+    result = folder_api.get_file(created_path, created_by, file_name, page_num, row_num, sort)
     print(result.json())
     print()
 

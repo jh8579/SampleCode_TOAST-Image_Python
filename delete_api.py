@@ -13,89 +13,53 @@ class DeleteAPI:
     def _get_request_header(self):
         return {'Authorization': self.secret_key}
 
-    def create(self, created_path):
-        print("폴더 생성 API")
+    def delete_one_file(self, folderId, fileId, includeThumbnail):
+        print("단일 삭제(동기) API")
 
         req_url = self._get_url()
-        req_url += 'folders'
-        print(req_url)
-
-        req_header = self._get_request_header()
-        req_header['Content-Type'] = 'application/json; charset=utf-8'
-        print(req_header)
-
-        req_data = {'path': created_path}
-        print(req_data)
-
-        return requests.post(req_url, headers=req_header, json=req_data)
-
-    def get_file(self, created_path, created_by, file_name, page_num, row_num, sort):
-        req_url = self._get_url()
-        req_url += 'folders'
+        req_url += 'images/'
+        req_url += 'sync?'
         print(req_url)
 
         req_header = self._get_request_header()
         print(req_header)
 
-        req_params={}
-        req_params['basepath'] = created_path
-        req_params['createdBy'] = created_by
-        req_params['name'] = file_name
-        req_params['page'] = page_num
-        req_params['rows'] = row_num
-        req_params['sort'] = sort
+        req_params = {}                               # folderId나 fileId 중 선택(폴더, 파일 동시에 삭제 불가!!!)
+        # req_params['folderId'] = folderId           # 삭제 원하는 요소만 주석 해제!
+        # req_params['fileId'] = fileId
+        req_params['includeThumbnail'] = includeThumbnail
 
-        return requests.get(req_url, headers=req_header, params=req_params)
+        return requests.delete(req_url, headers=req_header, params=req_params)
 
-    def get_file1(self, created_path, created_by, file_name, page_num, row_num, sort):
-        print("폴더 내 파일 목록 조회 API")
+    def delete_multi_file(self, folderIds, fileIds, includeThumbnail):
+        print("다중 삭제(비동기) API")
 
         req_url = self._get_url()
-        req_url += 'folders?'
-        print("url : " + req_url)
-
-        req_header = self._get_request_header()
-        print(req_header)
-
-        req_params={}
-        req_params['basepath'] = created_path
-        req_params['createdBy'] = created_by
-        req_params['name'] = file_name
-        req_params['page'] = page_num
-        req_params['rows'] = row_num
-        req_params['sort'] = sort
-
-        req_query = urllib.parse.urlencode(req_params).replace('%2F', '/')
-        req_query = req_query.replace('%3A', ':')
-        print("query : " + req_query)
-
-        req_session = requests.Session()
-        req = requests.Request(method='GET', headers=req_header, url=req_url)
-
-        prep = req.prepare()
-        prep.url = req_url + req_query
-
-        result = req_session.send(prep)
-        return result
-
-    def get_folder(self, created_path):
-        print("폴더 속성 조회 API")
-
-        req_url = self._get_url()
-        req_url += 'properties?'
-        print("url : " + req_url)
+        req_url += 'images/'
+        req_url += 'async?'
+        print(req_url)
 
         req_header = self._get_request_header()
         print(req_header)
 
         req_params = {}
-        req_params['path'] = created_path
+        req_params['folderIds'] = ''                                        # 리스트를 string ','로 구분
+        for i in folderIds:
+            req_params['folderIds'] += i + ','                              # 요소 마다 ',' 추가
+        req_params['folderIds'] = req_params['folderIds'][:-1]              # 마지막 ',' 삭제
 
-        req_query = urllib.parse.urlencode(req_params).replace('%2F', '/')
+        req_params['fileIds'] = ''                                          # 리스트를 string ','로 구분
+        for i in fileIds:
+            req_params['fileIds'] += i + ','                                # 요소 마다 ',' 추가
+        req_params['fileIds'] = req_params['fileIds'][:-1]                  # 마지막 ',' 삭제
+
+        req_params['includeThumbnail'] = includeThumbnail
+
+        req_query = urllib.parse.urlencode(req_params).replace('%2C', ',')      # ',' 자동 인코딩으로 인한 변경
         print("query : " + req_query)
 
         req_session = requests.Session()
-        req = requests.Request(method='GET', headers=req_header, url=req_url)
+        req = requests.Request(method='DELETE', headers=req_header, url=req_url, params=req_params)
 
         prep = req.prepare()
         prep.url = req_url + req_query
@@ -105,30 +69,30 @@ class DeleteAPI:
 
 if __name__ == '__main__':
 
-    delete_api = DeleteAPI(FOLDER_URL, APP_KEY, SECRET_KEY)
+    # git 올릴때 삭제 후 commit!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    IMAGE_URL = 'https://api-image.cloud.toast.com/image/v2.0/appkeys/'
+    APP_KEY = {APP_KEY}
+    SECRET_KEY = {SECRET_KEY}
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    base_path = '/'                         # base 경로
-    folder_name = 'jinho'                   # 폴더 이름
-    created_path = base_path + folder_name  # (필수) 폴더 경로
+    delete_api = DeleteAPI(IMAGE_URL, APP_KEY, SECRET_KEY)
 
-    created_by = 'U'                        # (선택) 목록 조회 대상 생성 속성 지정
-    file_name = 'sample.png'                # (선택) 목록 조회 대상 이름 지정
-    page_num = 1                            # (선택) 목록 조회 페이지 수 지정
-    row_num = 100                           # (선택) 목록 조회 열 수 지정
-    sort = "name:asc"                       # (선택) 목로 조회 정렬 기준 지정
+    # (중요!) 단일 삭제 API로는 폴더와 파일 동시 삭제 불가
+    folder_id = '71dfdd68-9443-4edb-bbab-7eff86513a02'      # (필수) 단일 삭제할 폴더 id
+    file_id = '77cbb66d-5fdd-4b36-8918-5323ed16c0b5'        # (필수) 단일 삭제할 파일 id
 
-    # 폴더 생성 API
-    result = delete_api.create(created_path)
+    folder_ids = ['65b0faf3-d0a4-4b7a-b47f-8464c65ac7f3', '77cbb66d-5fdd-4b36-8918-5323ed16c0b5']   # (필수) 다중 삭제할 폴더 id
+    file_ids = ['65b0faf3-d0a4-4b7a-b47f-8464c65ac7f3', '77cbb66d-5fdd-4b36-8918-5323ed16c0b5']     # (필수) 다중 삭제할 파일 id
+
+    includeThumbnail = True                 # (선택) 목록 조회 대상 생성 속성 지정
+
+    # 단일 삭제 API
+    result = delete_api.delete_one_file(folder_id, file_id, includeThumbnail)
     print(result.json())
     print()
 
-    # 폴더 내 파일 목록 조회 API
-    #result = folder_api.get_file(created_path, created_by, file_name, page_num, row_num, sort)
-    result = delete_api.get_file1(created_path, created_by, file_name, page_num, row_num, sort)
+    # 다중 삭제 API
+    result = delete_api.delete_multi_file(folder_ids, file_ids, includeThumbnail)
     print(result.json())
     print()
 
-    # 폴더 속성 조회 API
-    result = delete_api.get_folder(created_path)
-    print(result.json())
-    print()
